@@ -213,9 +213,20 @@ function generateMatrix12(k = 10, n = 10) {
 И тут, по скольку перебрать массив с `[empty × 10000]` мы не можем, к сожалению приходиться его предварительно заполнять нулями.
 
 # Переворачиваем матрицу
-Начнем с функции которую написал на тех. интервью:
+Начнем с функции которую написал на тех. интервью. А для генерации массива будем использовать `generateMatrix7`, т.к. она самая быстрая.
 
 ```
+const matrix = generateMatrix7(10000, 10000);
+console.log('matrix prepered', matrix.length);
+
+console.time('methods');
+rotateArrayUsingForLoop(matrix)
+console.timeEnd('methods');
+```
+
+И собственно наша функция:
+```
+// 7689 ms
 function rotateArrayUsingForLoop(array) {
   const result = [];
   for (let i = 0; i < array.length; i++) {
@@ -229,3 +240,74 @@ function rotateArrayUsingForLoop(array) {
   return result;
 }
 ```
+7 секунд. Да, штука не быстрая получилась. Интересно, как же получиться с методами?
+
+```
+// 1989 ms
+function rotateArrayUsingMethods(array) {
+  return array.reduce((result, subArray) =>
+    subArray.map((elem, j) => {
+      if(!result[j]) {
+        result[j] = [];
+      }
+      result[j] = elem;
+    }),
+  new Array(array[0].length));
+}
+```
+Ооо, вот это по лучше. Назревает вопрос, а нафига мне изучать цикл `for`, который сложный, морально устарел уже, и никто его не использует, и он медленный к тому же.
+
+Но это только на первый взгляд. Немного оптимизации, и вуаля:
+```
+// 333 ms
+function rotateArrayUsingForLoop2(array) {
+  const result = new Array(array[0].length);
+  const len = array.length;
+  for (var i = 0; i < len; i++) {
+    for (var j = 0, itemLen = array[i].length; j < itemLen; j++) {
+      if(!result[j]) {
+        result[j] = [array[i][j]];
+        continue;
+      }
+      result[j] = array[i][j];
+    }
+  }
+  return result;
+}
+```
+
+Пушка-ракета! За что действительно я люблю старые добрые циклы - так это за возможность скипать итерацию на следующий шаг или прерывать выполнение цикла.
+
+P.S. Возможно эта дилетантская статья когда-нибудь дорастет до уровня хабра (ну, когда я еще больше вникну в глубины JS и смогу объяснить что и как там под капотом), а пока вы можете насладиться чтивом которое меня вдохновило на поиски таких оптимизаций:
+https://dou.ua/lenta/articles/why-understanding-algorithms-is-important/
+https://habr.com/ru/company/otus/blog/547098/
+
+P.P.S. Так же, когда есть массив объектов, и необходимо сделать поиск, очень классным решением нашел вот что:
+```
+const users = [
+  {
+    id: 1,
+    name: 'Joe I',
+    email: 'joe-1@mail.com'
+  },
+  {
+    id: 2,
+    name: 'Joe II',
+    email: 'joe-2@mail.com'
+  },
+  {
+    id: 3,
+    name: 'Joe III',
+    email: 'joe-3@mail.com'
+  },
+];
+
+const obj = users.reduce((acc, cur) => {
+  acc[cur.email] = cur;
+  return acc;
+}, {});
+
+obj[user.email].name;
+```
+Лучше сделать один проход O(n) по всем элементам и преобразовать массив в объект, и найти данные за O(2n) или O(1), чем делать вложенные циклы в O(n^2);
+
